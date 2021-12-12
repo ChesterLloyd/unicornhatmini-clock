@@ -7,14 +7,30 @@ from unicornhatmini import UnicornHATMini
 from random import randrange
 from signal import pause
 
+# Settings
+# Flash the colon between hour and minutes?
+blinkDots = True
+
+# Change brightness for day and night?
+brightnessDaytime = 0.1
+brightnessNightTime = 0.02
+dayTimeStartHour = 8
+dayTimeEndHour = 23
+enableNightMode = True
+
+# Change colour every hour or minute?
+changeColourEveryMinute = False
+changeColourEveryHour = True
+
 unicornhatmini = UnicornHATMini()
-unicornhatmini.set_brightness(0.05)
+unicornhatmini.set_brightness(brightnessDaytime)
 
 red = 0
 green = 0
 blue = 0
 dotson = True
 previousMinute = -1
+previousHour = -1
 mode = 'time'
 
 numbers = {
@@ -38,14 +54,16 @@ button_b = Button(6)
 #button_y = Button(24)
 
 
-def enable_show_time(button):
+def enable_show_time():
     global mode
     mode = 'time'
 
 
-def enable_show_date(button):
+def enable_show_date():
     global mode
     mode = 'date'
+    time.sleep(5)
+    enable_show_time()
 
 
 def change_color():
@@ -58,7 +76,7 @@ def change_color():
 
 
 button_a.when_pressed = enable_show_date
-button_a.when_released = enable_show_time
+# button_a.when_released = enable_show_time
 button_b.when_pressed = change_color
 
 
@@ -75,7 +93,7 @@ def show_time(now):
     timestring = now.strftime("%H%M")
     letter(timestring[0], 0)
     letter(timestring[1], 4)
-    if dotson == True:
+    if not blinkDots or dotson:
         letter(":", 7)
     letter(timestring[2], 10)
     letter(timestring[3], 14)
@@ -83,7 +101,6 @@ def show_time(now):
 
 
 def show_date(now):
-    global dotson
     unicornhatmini.clear()
     timestring = now.strftime("%d%m")
     letter(timestring[0], 0)
@@ -94,9 +111,24 @@ def show_date(now):
     unicornhatmini.show()
 
 
+if not changeColourEveryMinute and not changeColourEveryHour:
+    # Colour must be set at least once, else no lights
+    change_color()
+
+
 while True:
     now = datetime.datetime.now()
-    if now.minute != previousMinute:
+
+    # Time based brightness
+    if enableNightMode and (now.hour <= dayTimeStartHour or now.hour >= dayTimeEndHour):
+        unicornhatmini.set_brightness(brightnessNightTime)
+    else:
+        unicornhatmini.set_brightness(brightnessDaytime)
+
+    # Time based colour change
+    if changeColourEveryMinute and (now.minute != previousMinute):
+        change_color()
+    if not changeColourEveryMinute and (changeColourEveryHour and (now.hour != previousHour)):
         change_color()
 
     if mode == 'time':
@@ -107,4 +139,5 @@ while True:
 
     dotson = not dotson
     previousMinute = now.minute
+    previousHour = now.hour
     time.sleep(0.5)
