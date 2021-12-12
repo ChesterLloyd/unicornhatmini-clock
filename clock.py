@@ -120,7 +120,7 @@ while True:
     now = datetime.datetime.now()
 
     # Time based brightness
-    if enableNightMode and (now.hour <= dayTimeStartHour or now.hour >= dayTimeEndHour):
+    if enableNightMode and (now.hour < dayTimeStartHour or now.hour >= dayTimeEndHour):
         unicornhatmini.set_brightness(brightnessNightTime)
     else:
         unicornhatmini.set_brightness(brightnessDaytime)
